@@ -506,8 +506,6 @@ class SingleInput():
 
 class Info():
 
-    pad_size = 100
-
     def __init__(self, parent, screen, title, top_title, info):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
@@ -515,7 +513,7 @@ class Info():
         self.panel.hide()
         panel.update_panels()
 
-        self.pad = curses.newpad(self.pad_size, screen.getmaxyx()[1] - 2)
+        self.pad = curses.newpad(5 + info.count('\n'), screen.getmaxyx()[1] - 2)
         self.pad.bkgd(screen.getbkgd())
 
         self.parent = parent
