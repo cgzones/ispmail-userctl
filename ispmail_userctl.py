@@ -999,7 +999,7 @@ def main():
     lines, cols = getheightwidth()
     if lines < 25 or cols < 80:
         print(WARN + '   small terminal detected (%d x %d)' % (lines, cols, ))
-        print(WARN + '   recommend minumum is (25 x 80)')
+        print(WARN + '   recommend minimum is (25 x 80)')
         print(WARN + '   app might be unstable')
 
     global DB_CURSOR
