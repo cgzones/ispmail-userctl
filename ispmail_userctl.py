@@ -49,7 +49,7 @@ import re
 
 if not sys.stdout.isatty() or not sys.stdin.isatty():
     print('ISPMail userctl is based on curses and needs a real tty to work!')
-    exit(1)
+    sys.exit(1)
 
 
 NOTE = '\033[34;1m[*]\033[0m'
@@ -63,7 +63,7 @@ try:
 except ImportError:
     print(ERR + ' No MySQLdb python module found!')
     print(NOTE + '     On Debian install python3-mysqldb')
-    exit(1)
+    sys.exit(1)
 
 
 if USE_BCRYPT:
@@ -72,7 +72,7 @@ if USE_BCRYPT:
     except ImportError:
         print(ERR + ' No bcrypt python module found!')
         print(NOTE + '     On Debian install python3-bcrypt')
-        exit(1)
+        sys.exit(1)
 
 
 def fmt_yellow(msg):
@@ -99,16 +99,16 @@ def format_quota(quota):
 
 
 def parse_quota(quota_raw):
-    m = re.match(r'(\d+)\s*(\w+)?', quota_raw)
-    if not m or not m[1]:
+    match = re.match(r'(\d+)\s*(\w+)?', quota_raw)
+    if not match or not match[1]:
         return None
 
-    amount = int(m[1])
+    amount = int(match[1])
 
-    if not m[2]:
+    if not match[2]:
         return amount
 
-    quantifier = m[2].casefold()
+    quantifier = match[2].casefold()
 
     if quantifier == 'kb':
         return 1000 * amount
@@ -1023,7 +1023,7 @@ def main():
             DB_CONNECTION.close()
 
         print(WARN + fmt_yellow(' Unsaved changes are lost!'))
-        exit(1)
+        sys.exit(1)
 
     except MySQLdb.Error as err:
         if DB_CURSOR:
