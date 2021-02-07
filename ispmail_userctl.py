@@ -37,7 +37,6 @@ USE_BCRYPT = False
 import sys
 import curses
 import curses.ascii
-from curses import panel
 from enum import Enum
 from signal import signal, SIGWINCH
 import os
@@ -221,9 +220,6 @@ class Note():
     def __init__(self, parent, screen, title, top_title, text, continue_text='ok'):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.parent = parent
         self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
@@ -242,11 +238,10 @@ class Note():
 
         self.window.addstr(5, 3, self.continue_text, curses.A_REVERSE)
 
+        self.window.noutrefresh()
+
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         while True:
             self.draw()
@@ -257,9 +252,6 @@ class Note():
             if key in [curses.KEY_ENTER, ord('\n'), ord('q'), ord('Q')]:
                 break
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
 
@@ -274,9 +266,6 @@ class Confirm():
     def __init__(self, parent, screen, title, top_title, text, opta_text, optb_text):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.parent = parent
         self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
@@ -302,11 +291,10 @@ class Confirm():
             self.window.addstr(5, 3, self.opta_text, curses.A_NORMAL)
             self.window.addstr(7, 3, self.optb_text, curses.A_REVERSE)
 
+        self.window.noutrefresh()
+
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         opt_return = ConfirmResult.OPTNONE
 
@@ -332,9 +320,6 @@ class Confirm():
             elif key in [ord('q'), ord('Q')]:
                 break
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
         return opt_return
@@ -345,9 +330,6 @@ class Select():
     def __init__(self, parent, screen, title, top_title, items):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.parent = parent
         self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
@@ -393,9 +375,6 @@ class Select():
 
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         ret = None
 
@@ -422,9 +401,6 @@ class Select():
             elif key in [ord('q'), ord('Q')]:
                 break
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
         return ret
@@ -435,9 +411,6 @@ class SingleInput():
     def __init__(self, parent, screen, title, top_title, text, input_visible):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.parent = parent
         self.top_title = top_title
@@ -463,11 +436,10 @@ class SingleInput():
 
         self.window.addstr(7, 1, 'Return to %s' % self.top_title, curses.A_NORMAL if self.input_active else curses.A_REVERSE)
 
+        self.window.noutrefresh()
+
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         while True:
             self.draw()
@@ -496,9 +468,6 @@ class SingleInput():
                 if self.input_string:
                     self.input_string = self.input_string[:-1]
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
         return self.input_string if self.input_active else None
@@ -509,9 +478,6 @@ class Info():
     def __init__(self, parent, screen, title, top_title, info):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.pad = curses.newpad(5 + info.count('\n'), screen.getmaxyx()[1] - 2)
         self.pad.bkgd(screen.getbkgd())
@@ -534,6 +500,8 @@ class Info():
         self.window.resize(lines, cols)
 
     def draw(self):
+        self.window.clear()
+        self.window.noutrefresh()
         self.pad.clear()
         self.pad.addstr(0, 9, self.full_title, curses.A_BOLD)
         self.pad.addstr(2, 0, self.info)
@@ -543,9 +511,6 @@ class Info():
 
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         while True:
             self.draw()
@@ -564,9 +529,6 @@ class Info():
             elif key == curses.KEY_PPAGE:
                 self._navigate(-15)
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
 
@@ -575,9 +537,6 @@ class Menu():
     def __init__(self, parent, screen, title, top_title, items, *args):
         self.window = screen.derwin(0, 0)
         self.window.keypad(1)
-        self.panel = panel.new_panel(self.window)
-        self.panel.hide()
-        panel.update_panels()
 
         self.parent = parent
         self.position = 0
@@ -621,14 +580,13 @@ class Menu():
             msg = '%d. %s' % (index + 1, item[0])
             self.window.addstr(index + 3, 1, msg, mode)
 
+        self.window.noutrefresh()
+
         for child in self.children:
             child.draw()
 
     def run(self):
         self.parent.add(self)
-        self.panel.top()
-        self.panel.show()
-        panel.update_panels()
 
         while True:
             self.draw()
@@ -640,9 +598,7 @@ class Menu():
                 if self.position == len(self.items) - 1:
                     break
                 else:
-                    self.panel.hide()
                     do_exit = self.items[self.position][1](self, self.screen, self.full_title, *self.args)
-                    self.panel.show()
                     if do_exit:
                         break
 
@@ -655,9 +611,6 @@ class Menu():
             elif key in [ord('q'), ord('Q')]:
                 break
 
-        self.panel.hide()
-        panel.update_panels()
-        curses.doupdate()
         self.parent.remove(self)
 
 
