@@ -664,19 +664,21 @@ def domain_add_win(parent, window, top_title):
 def domain_selection_win(parent, window, top_title):
     handle0 = Select(parent, window, 'Select Domain to manage', top_title, [(domain.name, domain) for domain in db_get_domains()])
     domain = handle0.run()
-    if domain:
-        menu_items = [
-            ('List users and aliases', domain_list_usersaliases_win),
-            ('Change password of an user', domain_change_pw_win),
-            ('Change quota of an user', domain_change_quota_win),
-            ('Add user', domain_add_user_win),
-            ('Add alias', domain_add_alias_win),
-            ('Delete user', domain_delete_user_win),
-            ('Delete alias', domain_delete_alias_win),
-            ('Delete domain', domain_delete_confirm_win)
-            ]
-        handle1 = Menu(parent, window, 'Manage Domain \'%s\'' % domain.name, top_title, menu_items, domain)
-        handle1.run()
+    if not domain:
+        return
+
+    menu_items = [
+        ('List users and aliases', domain_list_usersaliases_win),
+        ('Change password of an user', domain_change_pw_win),
+        ('Change quota of an user', domain_change_quota_win),
+        ('Add user', domain_add_user_win),
+        ('Add alias', domain_add_alias_win),
+        ('Delete user', domain_delete_user_win),
+        ('Delete alias', domain_delete_alias_win),
+        ('Delete domain', domain_delete_confirm_win)
+        ]
+    handle1 = Menu(parent, window, 'Manage Domain \'%s\'' % domain.name, top_title, menu_items, domain)
+    handle1.run()
 
 
 def domain_list_usersaliases_win(parent, window, top_title, domain):
@@ -702,56 +704,66 @@ def domain_list_usersaliases_win(parent, window, top_title, domain):
 def domain_delete_user_win(parent, window, top_title, domain):
     handle0 = Select(parent, window, 'Select user to delete', top_title, [(user.email, user) for user in db_get_users(domain)])
     user = handle0.run()
-    if user:
-        handle1 = Confirm(parent, window, 'Delete User', top_title, 'Do you want to delete the user \'%s\'?' % user.email, 'no', 'yes')
-        result = handle1.run()
-        if result == ConfirmResult.OPTB:
-            db_delete_user(user)
+    if not user:
+        return
+
+    handle1 = Confirm(parent, window, 'Delete User', top_title, 'Do you want to delete the user \'%s\'?' % user.email, 'no', 'yes')
+    result = handle1.run()
+    if result == ConfirmResult.OPTB:
+        db_delete_user(user)
 
 
 def domain_delete_alias_win(parent, window, top_title, domain):
     handle0 = Select(parent, window, 'Select alias to delete', top_title, [(alias.source, alias) for alias in db_get_aliases(domain)])
     alias = handle0.run()
-    if alias:
-        handle1 = Confirm(parent, window, 'Delete Alias', top_title, 'Do you want to delete the alias \'%s\' (to \'%s\')?' % (alias.source, alias.destination,), 'no', 'yes')
-        result = handle1.run()
-        if result == ConfirmResult.OPTB:
-            db_delete_alias(alias)
+    if not alias:
+        return
+
+    handle1 = Confirm(parent, window, 'Delete Alias', top_title, 'Do you want to delete the alias \'%s\' (to \'%s\')?' % (alias.source, alias.destination,), 'no', 'yes')
+    result = handle1.run()
+    if result == ConfirmResult.OPTB:
+        db_delete_alias(alias)
 
 
 def domain_change_pw_win(parent, window, top_title, domain):
     handle0 = Select(parent, window, 'Select user for password change', top_title, [(user.email, user) for user in db_get_users(domain)])
     user = handle0.run()
-    if user:
-        handle1 = SingleInput(parent, window, 'Password for user \'%s\' (1/2)' % user.email, top_title, 'Enter the new password:', False)
-        pw1 = handle1.run()
-        handle2 = SingleInput(parent, window, 'Password for user \'%s\' (2/2)' % user.email, top_title, 'Enter the new password again:', False)
-        pw2 = handle2.run()
+    if not user:
+        return
 
-        if pw1 and pw1 == pw2:
-            db_update_password(user, pw1)
-            handle3 = Note(parent, window, 'Password Changed', top_title, 'Password for user \'%s\' successfully changed.' % user.email)
-            handle3.run()
-        else:
-            handle3 = Note(parent, window, 'Password Changed Failed', top_title, 'Could not change password for user \'%s\': different new passwords.' % user.email)
-            handle3.run()
+    handle1 = SingleInput(parent, window, 'Password for user \'%s\' (1/2)' % user.email, top_title, 'Enter the new password:', False)
+    pw1 = handle1.run()
+    handle2 = SingleInput(parent, window, 'Password for user \'%s\' (2/2)' % user.email, top_title, 'Enter the new password again:', False)
+    pw2 = handle2.run()
+
+    if pw1 and pw1 == pw2:
+        db_update_password(user, pw1)
+        handle3 = Note(parent, window, 'Password Changed', top_title, 'Password for user \'%s\' successfully changed.' % user.email)
+        handle3.run()
+    else:
+        handle3 = Note(parent, window, 'Password Changed Failed', top_title, 'Could not change password for user \'%s\': different new passwords.' % user.email)
+        handle3.run()
 
 
 def domain_change_quota_win(parent, window, top_title, domain):
     handle0 = Select(parent, window, 'Select user for quota change', top_title, [(user.email, user) for user in db_get_users(domain)])
     user = handle0.run()
-    if user:
-        handle1 = SingleInput(parent, window, 'Quota for user \'%s\'' % user.email, top_title, 'Enter the new quota amount:', True)
-        quota_raw = handle1.run()
-        if quota_raw:
-            quota_parsed = parse_quota(quota_raw)
-            if quota_parsed:
-                db_update_quota(user, quota_parsed)
-                handle2 = Note(parent, window, 'Quota Changed', top_title, 'Quota for user \'%s\' successfully changed.' % user.email)
-                handle2.run()
-            else:
-                handle2 = Note(parent, window, 'Quota Changed Failed', top_title, 'Could not change quota for user \'%s\': invalid quota value.' % user.email)
-                handle2.run()
+    if not user:
+        return
+
+    handle1 = SingleInput(parent, window, 'Quota for user \'%s\'' % user.email, top_title, 'Enter the new quota amount:', True)
+    quota_raw = handle1.run()
+    if not quota_raw:
+        return
+
+    quota_parsed = parse_quota(quota_raw)
+    if quota_parsed:
+        db_update_quota(user, quota_parsed)
+        handle2 = Note(parent, window, 'Quota Changed', top_title, 'Quota for user \'%s\' successfully changed.' % user.email)
+        handle2.run()
+    else:
+        handle2 = Note(parent, window, 'Quota Changed Failed', top_title, 'Could not change quota for user \'%s\': invalid quota value.' % user.email)
+        handle2.run()
 
 
 def domain_add_user_win(parent, window, top_title, domain):
