@@ -751,7 +751,7 @@ def domain_change_quota_win(parent, window, top_title, domain):
     if not user:
         return
 
-    handle1 = SingleInput(parent, window, 'Quota for user \'%s\'' % user.email, top_title, 'Enter the new quota amount:', True)
+    handle1 = SingleInput(parent, window, 'Quota for user \'%s\'' % user.email, top_title, 'Enter the new quota amount (e.g. 10MB):', True)
     quota_raw = handle1.run()
     if not quota_raw:
         return
@@ -789,7 +789,7 @@ def domain_add_user_win(parent, window, top_title, domain):
         handle4.run()
         return
 
-    handle5 = SingleInput(parent, window, 'Add User (4/4)', top_title, 'Enter the new quota amount:', True)
+    handle5 = SingleInput(parent, window, 'Add User (4/4)', top_title, 'Enter the new quota amount (e.g. 10MB):', True)
     quota_raw = handle5.run()
     quota_parsed = parse_quota(quota_raw)
     if not quota_parsed:
