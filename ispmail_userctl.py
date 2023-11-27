@@ -359,10 +359,13 @@ class Select():
         if len(self.items) > 1:
             for index, item in enumerate(self.items):
                 mode = curses.A_REVERSE if index == self.position else curses.A_NORMAL
-                offset = 1 if index == len(self.items) - 1 else 0
 
-                msg = '%d. %s' % (index + 1, item[0])
-                self.pad.addstr(index + 3 + offset, 1, msg, mode)
+                # last 'return' item
+                if index == len(self.items) - 1:
+                    self.pad.addstr(index + 4, 1, item[0], mode)
+                else:
+                    msg = '%d. %s' % (index + 1, item[0])
+                    self.pad.addstr(index + 3, 1, msg, mode)
         else:
             self.pad.addstr(3, 1, 'No entry to select')
             self.pad.addstr(5, 1, self.items[0][0], curses.A_REVERSE)
