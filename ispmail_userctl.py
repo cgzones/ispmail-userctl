@@ -605,6 +605,15 @@ class Menu():
                     if do_exit:
                         break
 
+            elif key in map(ord, map(str, range(1, len(self.items) + 1))):
+                idx = int(chr(key)) - 1
+                if idx == len(self.items) - 1:
+                    break
+                else:
+                    do_exit = self.items[idx][1](self, self.screen, self.full_title, *self.args)
+                    if do_exit:
+                        break
+
             elif key == curses.KEY_UP:
                 self._navigate(-1)
 
