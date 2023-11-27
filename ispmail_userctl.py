@@ -448,8 +448,14 @@ class SingleInput(GuiObject):
         self.input_string = ''
         self.input_active = True
 
+        self.pad = curses.newpad(1, screen.getmaxyx()[1] - 2)
+        self.pad.bkgd(curses.color_pair(4))
+        self.input_size = self.window.getmaxyx()[1] - 9
+
+
     def resize(self, lines: int, cols: int) -> None:
         self.window.resize(lines, cols)
+        self.input_size = self.window.getmaxyx()[1] - 9
 
     def draw(self) -> None:
         self.window.clear()
@@ -459,14 +465,23 @@ class SingleInput(GuiObject):
         for idx, line in enumerate(self.text):
             self.window.addstr(3 + idx, 1, line)
 
-        txt = self.input_string if self.input_visible else '*' * len(self.input_string)
-
-        self.window.addstr(5 + self.text_lines, 3, '> ')
-        self.window.addstr(5 + self.text_lines, 5, txt, curses.color_pair(3))
-
         self.window.addstr(7 + self.text_lines, 1, 'Return to %s' % self.top_title, curses.A_NORMAL if self.input_active else curses.A_REVERSE)
 
         self.window.noutrefresh()
+
+        self.pad.clear()
+
+        txt = self.input_string if self.input_visible else '*' * len(self.input_string)
+        if len(txt) >= self.input_size - 1:
+            txt = txt[-(self.input_size - 1):]
+
+        self.pad.addstr(0, 0, '> ', curses.color_pair(2))
+        self.pad.addstr(0, 2, txt, curses.color_pair(3))
+
+        self.pad.refresh(0, 0,
+                         self.window.getbegyx()[0] + 5 + self.text_lines, self.window.getbegyx()[1] + 4,
+                         self.window.getbegyx()[0] + 5 + self.text_lines + 1, self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 4)
+
 
     def run(self) -> None | str:
         self.parent.add(self)
@@ -477,8 +492,8 @@ class SingleInput(GuiObject):
 
             if self.input_active:
                 curses.curs_set(1)
-            self.window.move(5 + self.text_lines, 5 + len(self.input_string))
-            self.window.clrtoeol()
+            self.pad.move(0, min(2 + len(self.input_string), self.input_size))
+            self.pad.clrtoeol()
             key = self.window.getch()
             curses.curs_set(0)
 
@@ -994,6 +1009,7 @@ def main_app(screen: curses.window) -> None:
     curses.init_pair(1, curses.COLOR_YELLOW, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLUE)
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     global MAINAPP
     MAINAPP = MainApp(screen)
