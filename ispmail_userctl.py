@@ -976,6 +976,10 @@ def main():
             db='mailserver',
             charset='utf8mb4')
 
+        ## DEBUG support
+        #import sqlite3
+        #DB_CONNECTION = sqlite3.connect("testdb.db")
+
         DB_CURSOR = DB_CONNECTION.cursor()
 
         curses.wrapper(main_app)
