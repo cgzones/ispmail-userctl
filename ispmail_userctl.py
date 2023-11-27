@@ -871,16 +871,16 @@ def domain_add_alias_win(parent: GuiManager, window: curses.window, top_title: s
         handle1.run()
         return
 
-    if source + '@' + domain.name in [alias.source for alias in db_get_aliases(domain)]:
-        handle2 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: alias already exists.')
-        handle2.run()
-        return
-
     handle3 = SingleInput(parent, window, 'Add Alias (2/2)', top_title, 'Enter the new alias destination (supply the full address, with domain):', True)
     destination = handle3.run()
     if not destination or destination.find('@') == -1:
         handle4 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: invalid destination.')
         handle4.run()
+        return
+
+    if any(alias.source == source + '@' + domain.name and alias.destination == destination for alias in db_get_aliases(domain)):
+        handle2 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: alias already exists.')
+        handle2.run()
         return
 
     db_create_alias(domain, source + '@%s' % domain.name, destination)
