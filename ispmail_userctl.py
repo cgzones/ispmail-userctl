@@ -692,13 +692,20 @@ def full_overview_win(parent: GuiManager, window: curses.window, top_title: str)
     for user in users:
         text += '\t%s  --  %s quota\n' % (user.email, format_quota(user.quota))
     text += '\nFound %d alias(es):\n\n' % len(aliases)
+    aliases.sort(key=lambda alias: alias.source)
+    prev_source = None
     for alias in aliases:
         if any(alias.destination == user.email for user in users):
-            foreign_msg = ' (internal destination email)'
+            foreign_msg = '  (internal destination email)'
         else:
-            foreign_msg = ' (foreign destination email)'
+            foreign_msg = '  (foreign destination email)'
 
-        text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+        if prev_source == alias.source:
+            text += '\t  -> %s%s\n' % (alias.destination, foreign_msg)
+        else:
+            text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+
+        prev_source = alias.source
 
     handle = Info(parent, window, 'Full Overview', top_title, text)
     handle.run()
@@ -744,13 +751,20 @@ def domain_list_usersaliases_win(parent: GuiManager, window: curses.window, top_
     for user in users:
         text += '\t%s  --  %s quota\n' % (user.email, format_quota(user.quota))
     text += '\nFound %d alias(es):\n\n' % len(aliases)
+    aliases.sort(key=lambda alias: alias.source)
+    prev_source = None
     for alias in aliases:
         if any(alias.destination == user.email for user in users):
-            foreign_msg = ' (internal destination email)'
+            foreign_msg = '  (internal destination email)'
         else:
-            foreign_msg = ' (foreign destination email)'
+            foreign_msg = '  (foreign destination email)'
 
-        text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+        if prev_source == alias.source:
+            text += '\t  -> %s%s\n' % (alias.destination, foreign_msg)
+        else:
+            text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+
+        prev_source = alias.source
 
     handle = Info(parent, window, 'List of users and aliases', top_title, text)
     handle.run()
@@ -769,7 +783,7 @@ def domain_delete_user_win(parent: GuiManager, window: curses.window, top_title:
 
 
 def domain_delete_alias_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = Select(parent, window, 'Select alias to delete', top_title, [(alias.source, alias) for alias in db_get_aliases(domain)])
+    handle0 = Select(parent, window, 'Select alias to delete', top_title, [('%s  ->  %s' %(alias.source, alias.destination,), alias) for alias in db_get_aliases(domain)])
     alias = handle0.run()
     if not alias:
         return
