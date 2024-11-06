@@ -104,7 +104,7 @@ def format_quota(quota: float) -> str:
 def parse_quota(quota_raw: str) -> float:
     match = re.match(r'([0-9.,]+)\s*(\w+)?', quota_raw)
     if not match or not match[1]:
-        raise ValueError(f'invalid quota: \'{quota_raw}\'')
+        raise ValueError(f"invalid quota: '{quota_raw}'")
 
     amount = float(match[1])
 
@@ -120,7 +120,7 @@ def parse_quota(quota_raw: str) -> float:
     if quantifier == 'gb':
         return 1000 * 1000 * 1000 * amount
 
-    raise ValueError(f'invalid quota quantifier: \'{quantifier}\'')
+    raise ValueError(f"invalid quota quantifier: '{quantifier}'")
 
 
 @dataclass
@@ -160,14 +160,21 @@ def db_create_domain(name: str) -> None:
 
 
 def db_delete_domain(domain: DBDomain) -> None:
-    DB_CURSOR.execute('DELETE FROM virtual_domains where id = %s;', (domain.identifier,))
+    DB_CURSOR.execute(
+        'DELETE FROM virtual_domains where id = %s;', (domain.identifier,)
+    )
 
 
 def db_get_users(domain: DBDomain | None = None) -> list[DBUser]:
     if domain:
-        DB_CURSOR.execute('SELECT id, domain_id, email, quota FROM virtual_users WHERE domain_id = %s ORDER BY email;', (domain.identifier,))
+        DB_CURSOR.execute(
+            'SELECT id, domain_id, email, quota FROM virtual_users WHERE domain_id = %s ORDER BY email;',
+            (domain.identifier,),
+        )
     else:
-        DB_CURSOR.execute('SELECT id, domain_id, email, quota FROM virtual_users ORDER BY domain_id, email;')
+        DB_CURSOR.execute(
+            'SELECT id, domain_id, email, quota FROM virtual_users ORDER BY domain_id, email;'
+        )
 
     return [DBUser(row[0], row[1], row[2], row[3]) for row in DB_CURSOR.fetchall()]
 
@@ -175,21 +182,55 @@ def db_get_users(domain: DBDomain | None = None) -> list[DBUser]:
 def db_create_user(domain: DBDomain, email: str, password: str, quota: float) -> None:
     if USE_BCRYPT:
         hashed_pw = bcrypt.hashpw(password.encode('UTF-8'), bcrypt.gensalt())
-        DB_CURSOR.execute('INSERT INTO virtual_users (domain_id, email, password, quota) VALUES ( %s, %s, CONCAT("{BLF-CRYPT}", %s), %s);', (domain.identifier, email, hashed_pw, quota,))
+        DB_CURSOR.execute(
+            'INSERT INTO virtual_users (domain_id, email, password, quota) VALUES ( %s, %s, CONCAT("{BLF-CRYPT}", %s), %s);',
+            (
+                domain.identifier,
+                email,
+                hashed_pw,
+                quota,
+            ),
+        )
     else:
-        DB_CURSOR.execute('INSERT INTO virtual_users (domain_id, email, password, quota) VALUES ( %s, %s, CONCAT("{SHA512-CRYPT}", ENCRYPT (%s, CONCAT("$6$", SHA(RAND())))), %s);', (domain.identifier, email, password, quota,))
+        DB_CURSOR.execute(
+            'INSERT INTO virtual_users (domain_id, email, password, quota) VALUES ( %s, %s, CONCAT("{SHA512-CRYPT}", ENCRYPT (%s, CONCAT("$6$", SHA(RAND())))), %s);',
+            (
+                domain.identifier,
+                email,
+                password,
+                quota,
+            ),
+        )
 
 
 def db_update_password(user: DBUser, password: str) -> None:
     if USE_BCRYPT:
         hashed_pw = bcrypt.hashpw(password.encode('UTF-8'), bcrypt.gensalt())
-        DB_CURSOR.execute('UPDATE virtual_users SET password=CONCAT("{BLF-CRYPT}", %s) WHERE id = %s;', (hashed_pw, user.identifier,))
+        DB_CURSOR.execute(
+            'UPDATE virtual_users SET password=CONCAT("{BLF-CRYPT}", %s) WHERE id = %s;',
+            (
+                hashed_pw,
+                user.identifier,
+            ),
+        )
     else:
-        DB_CURSOR.execute('UPDATE virtual_users SET password=CONCAT("{SHA512-CRYPT}", ENCRYPT (%s, CONCAT("$6$", SHA(RAND())))) WHERE id = %s;', (password, user.identifier,))
+        DB_CURSOR.execute(
+            'UPDATE virtual_users SET password=CONCAT("{SHA512-CRYPT}", ENCRYPT (%s, CONCAT("$6$", SHA(RAND())))) WHERE id = %s;',
+            (
+                password,
+                user.identifier,
+            ),
+        )
 
 
 def db_update_quota(user: DBUser, quota: float) -> None:
-    DB_CURSOR.execute('UPDATE virtual_users SET quota=%s WHERE id = %s;', (quota, user.identifier,))
+    DB_CURSOR.execute(
+        'UPDATE virtual_users SET quota=%s WHERE id = %s;',
+        (
+            quota,
+            user.identifier,
+        ),
+    )
 
 
 def db_delete_user(user: DBUser) -> None:
@@ -198,15 +239,27 @@ def db_delete_user(user: DBUser) -> None:
 
 def db_get_aliases(domain: DBDomain | None = None) -> list[DBAlias]:
     if domain:
-        DB_CURSOR.execute('SELECT id, domain_id, source, destination FROM virtual_aliases WHERE domain_id = %s ORDER BY source, destination;', (domain.identifier,))
+        DB_CURSOR.execute(
+            'SELECT id, domain_id, source, destination FROM virtual_aliases WHERE domain_id = %s ORDER BY source, destination;',
+            (domain.identifier,),
+        )
     else:
-        DB_CURSOR.execute('SELECT id, domain_id, source, destination FROM virtual_aliases ORDER BY source, destination;')
+        DB_CURSOR.execute(
+            'SELECT id, domain_id, source, destination FROM virtual_aliases ORDER BY source, destination;'
+        )
 
     return [DBAlias(row[0], row[1], row[2], row[3]) for row in DB_CURSOR.fetchall()]
 
 
 def db_create_alias(domain: DBDomain, source: str, destination: str) -> None:
-    DB_CURSOR.execute('INSERT INTO virtual_aliases (domain_id, source, destination) VALUES (%s, %s, %s);', (domain.identifier, source, destination,))
+    DB_CURSOR.execute(
+        'INSERT INTO virtual_aliases (domain_id, source, destination) VALUES (%s, %s, %s);',
+        (
+            domain.identifier,
+            source,
+            destination,
+        ),
+    )
 
 
 def db_delete_alias(alias: DBAlias) -> None:
@@ -214,39 +267,47 @@ def db_delete_alias(alias: DBAlias) -> None:
 
 
 class GuiObject(ABC):
+    @abstractmethod
+    def resize(self, lines: int, cols: int) -> None: ...
 
     @abstractmethod
-    def resize(self, lines: int, cols: int) -> None:
-        ...
+    def draw(self) -> None: ...
 
     @abstractmethod
-    def draw(self) -> None:
-        ...
-
-    @abstractmethod
-    def run(self) -> None | Any:
-        ...
+    def run(self) -> None | Any: ...
 
 
 class GuiManager(GuiObject, ABC):
+    @abstractmethod
+    def add(self, child: GuiObject) -> None: ...
 
     @abstractmethod
-    def add(self, child: GuiObject) -> None:
-        ...
-
-    @abstractmethod
-    def remove(self, child: GuiObject) -> None:
-        ...
+    def remove(self, child: GuiObject) -> None: ...
 
 
 class Note(GuiObject):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str, text: str, continue_text: str = 'ok'):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str,
+        text: str,
+        continue_text: str = 'ok',
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
         self.parent = parent
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.text = text
         self.continue_text = continue_text
 
@@ -286,13 +347,29 @@ class ConfirmResult(Enum):
 
 
 class Confirm(GuiObject):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str, text: str, opta_text: str, optb_text: str):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str,
+        text: str,
+        opta_text: str,
+        optb_text: str,
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
         self.parent = parent
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.text = text
         self.opta_text = opta_text
         self.optb_text = optb_text
@@ -350,13 +427,27 @@ class Confirm(GuiObject):
 
 
 class Select(GuiObject):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str, items: list[Any]):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str,
+        items: list[Any],
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
         self.parent = parent
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.position = 0
         self.items = items
         self.items.append(('Return to %s' % top_title, None))
@@ -398,7 +489,14 @@ class Select(GuiObject):
         if (self.window.getmaxyx()[0] - 5) > len(self.items) - padpos:
             padpos -= (self.window.getmaxyx()[0] - 5) - (len(self.items) - padpos)
 
-        self.pad.refresh(padpos, 0, self.window.getbegyx()[0], self.window.getbegyx()[1], self.window.getbegyx()[0] + self.window.getmaxyx()[0] - 1, self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 1)
+        self.pad.refresh(
+            padpos,
+            0,
+            self.window.getbegyx()[0],
+            self.window.getbegyx()[1],
+            self.window.getbegyx()[0] + self.window.getmaxyx()[0] - 1,
+            self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 1,
+        )
 
     def run(self) -> Any:
         self.parent.add(self)
@@ -434,14 +532,29 @@ class Select(GuiObject):
 
 
 class SingleInput(GuiObject):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str, text: str, input_visible: bool):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str,
+        text: str,
+        input_visible: bool,
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
         self.parent = parent
         self.top_title = top_title
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.text = text.splitlines()
         self.text_lines = len(self.text) - 1
         self.input_visible = input_visible
@@ -451,7 +564,6 @@ class SingleInput(GuiObject):
         self.pad = curses.newpad(1, screen.getmaxyx()[1] - 2)
         self.pad.bkgd(curses.color_pair(4))
         self.input_size = self.window.getmaxyx()[1] - 9
-
 
     def resize(self, lines: int, cols: int) -> None:
         self.window.resize(lines, cols)
@@ -465,7 +577,12 @@ class SingleInput(GuiObject):
         for idx, line in enumerate(self.text):
             self.window.addstr(3 + idx, 1, line)
 
-        self.window.addstr(7 + self.text_lines, 1, 'Return to %s' % self.top_title, curses.A_NORMAL if self.input_active else curses.A_REVERSE)
+        self.window.addstr(
+            7 + self.text_lines,
+            1,
+            'Return to %s' % self.top_title,
+            curses.A_NORMAL if self.input_active else curses.A_REVERSE,
+        )
 
         self.window.noutrefresh()
 
@@ -473,15 +590,19 @@ class SingleInput(GuiObject):
 
         txt = self.input_string if self.input_visible else '*' * len(self.input_string)
         if len(txt) >= self.input_size - 1:
-            txt = txt[-(self.input_size - 1):]
+            txt = txt[-(self.input_size - 1) :]
 
         self.pad.addstr(0, 0, '> ', curses.color_pair(2))
         self.pad.addstr(0, 2, txt, curses.color_pair(3))
 
-        self.pad.refresh(0, 0,
-                         self.window.getbegyx()[0] + 5 + self.text_lines, self.window.getbegyx()[1] + 4,
-                         self.window.getbegyx()[0] + 5 + self.text_lines + 1, self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 4)
-
+        self.pad.refresh(
+            0,
+            0,
+            self.window.getbegyx()[0] + 5 + self.text_lines,
+            self.window.getbegyx()[1] + 4,
+            self.window.getbegyx()[0] + 5 + self.text_lines + 1,
+            self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 4,
+        )
 
     def run(self) -> None | str:
         self.parent.add(self)
@@ -519,8 +640,14 @@ class SingleInput(GuiObject):
 
 
 class Info(GuiObject):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str, info: str):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str,
+        info: str,
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
@@ -529,7 +656,15 @@ class Info(GuiObject):
 
         self.parent = parent
         self.top_title = top_title
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.info = info
         self.pos = 0
         self.size = 0
@@ -551,7 +686,14 @@ class Info(GuiObject):
         self.pad.addstr(0, 9, self.full_title, curses.A_BOLD)
         self.pad.addstr(2, 0, self.info)
         self.pad.addstr('\n\nReturn to %s' % self.top_title, curses.A_REVERSE)
-        self.pad.refresh(self.pos, 0, self.window.getbegyx()[0] + 1, self.window.getbegyx()[1] + 1, self.window.getbegyx()[0] + self.window.getmaxyx()[0] - 3, self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 3)
+        self.pad.refresh(
+            self.pos,
+            0,
+            self.window.getbegyx()[0] + 1,
+            self.window.getbegyx()[1] + 1,
+            self.window.getbegyx()[0] + self.window.getmaxyx()[0] - 3,
+            self.window.getbegyx()[1] + self.window.getmaxyx()[1] - 3,
+        )
         self.size = self.pad.getyx()[0]
 
     def run(self) -> None:
@@ -581,8 +723,15 @@ MenuItemType = list[tuple[str, Callable[..., None | bool]]]
 
 
 class Menu(GuiManager):
-
-    def __init__(self, parent: GuiManager, screen: curses.window, title: str, top_title: str | None, items: MenuItemType, *args: Any):
+    def __init__(
+        self,
+        parent: GuiManager,
+        screen: curses.window,
+        title: str,
+        top_title: str | None,
+        items: MenuItemType,
+        *args: Any,
+    ):
         self.window = screen.derwin(0, 0)
         self.window.keypad(True)
 
@@ -593,7 +742,15 @@ class Menu(GuiManager):
             self.items.append(('Return to %s' % top_title, os.abort))
         else:
             self.items.append(('Exit and Save Changes', os.abort))
-        self.full_title = '%s -> %s' % (top_title, title,) if top_title else title
+        self.full_title = (
+            '%s -> %s'
+            % (
+                top_title,
+                title,
+            )
+            if top_title
+            else title
+        )
         self.screen = screen
         self.args = args
         self.children: set[GuiObject] = set()
@@ -646,7 +803,9 @@ class Menu(GuiManager):
                 if self.position == len(self.items) - 1:
                     break
                 else:
-                    do_exit = self.items[self.position][1](self, self.screen, self.full_title, *self.args)
+                    do_exit = self.items[self.position][1](
+                        self, self.screen, self.full_title, *self.args
+                    )
                     if do_exit:
                         break
 
@@ -655,7 +814,9 @@ class Menu(GuiManager):
                 if idx == len(self.items) - 1:
                     break
                 else:
-                    do_exit = self.items[idx][1](self, self.screen, self.full_title, *self.args)
+                    do_exit = self.items[idx][1](
+                        self, self.screen, self.full_title, *self.args
+                    )
                     if do_exit:
                         break
 
@@ -671,7 +832,9 @@ class Menu(GuiManager):
         self.parent.remove(self)
 
 
-def domain_overview_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
+def domain_overview_win(
+    parent: GuiManager, window: curses.window, top_title: str
+) -> None:
     domains = db_get_domains()
     text = 'Found %d domain(s):\n\n' % len(domains)
     for domain in domains:
@@ -681,7 +844,9 @@ def domain_overview_win(parent: GuiManager, window: curses.window, top_title: st
     handle.run()
 
 
-def full_overview_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
+def full_overview_win(
+    parent: GuiManager, window: curses.window, top_title: str
+) -> None:
     domains = db_get_domains()
     users = db_get_users()
     aliases = db_get_aliases()
@@ -703,7 +868,11 @@ def full_overview_win(parent: GuiManager, window: curses.window, top_title: str)
         if prev_source == alias.source:
             text += '\t  -> %s%s\n' % (alias.destination, foreign_msg)
         else:
-            text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+            text += '\t%s\n\t  -> %s%s\n' % (
+                alias.source,
+                alias.destination,
+                foreign_msg,
+            )
 
         prev_source = alias.source
 
@@ -712,20 +881,42 @@ def full_overview_win(parent: GuiManager, window: curses.window, top_title: str)
 
 
 def domain_add_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
-    handle0 = SingleInput(parent, window, 'Add Domain', top_title, 'Enter the new domain name:', True)
+    handle0 = SingleInput(
+        parent, window, 'Add Domain', top_title, 'Enter the new domain name:', True
+    )
     domain_name = handle0.run()
     if domain_name:
         if domain_name in [domain.name for domain in db_get_domains()]:
-            handle1 = Note(parent, window, 'Add Domain Failed', top_title, 'Could not add domain \'%s\': domainname already exists.' % domain_name)
+            handle1 = Note(
+                parent,
+                window,
+                'Add Domain Failed',
+                top_title,
+                "Could not add domain '%s': domainname already exists." % domain_name,
+            )
             handle1.run()
         else:
             db_create_domain(domain_name)
-            handle1 = Note(parent, window, 'Add Domain Successful', top_title, 'Domain \'%s\' successfully added.' % domain_name)
+            handle1 = Note(
+                parent,
+                window,
+                'Add Domain Successful',
+                top_title,
+                "Domain '%s' successfully added." % domain_name,
+            )
             handle1.run()
 
 
-def domain_selection_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
-    handle0 = Select(parent, window, 'Select Domain to manage', top_title, [(domain.name, domain) for domain in db_get_domains()])
+def domain_selection_win(
+    parent: GuiManager, window: curses.window, top_title: str
+) -> None:
+    handle0 = Select(
+        parent,
+        window,
+        'Select Domain to manage',
+        top_title,
+        [(domain.name, domain) for domain in db_get_domains()],
+    )
     domain = handle0.run()
     if not domain:
         return
@@ -738,13 +929,22 @@ def domain_selection_win(parent: GuiManager, window: curses.window, top_title: s
         ('Add alias', domain_add_alias_win),
         ('Delete user', domain_delete_user_win),
         ('Delete alias', domain_delete_alias_win),
-        ('Delete domain', domain_delete_confirm_win)
-        ]
-    handle1 = Menu(parent, window, 'Manage Domain \'%s\'' % domain.name, top_title, menu_items, domain)
+        ('Delete domain', domain_delete_confirm_win),
+    ]
+    handle1 = Menu(
+        parent,
+        window,
+        "Manage Domain '%s'" % domain.name,
+        top_title,
+        menu_items,
+        domain,
+    )
     handle1.run()
 
 
-def domain_list_usersaliases_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
+def domain_list_usersaliases_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
     users = db_get_users(domain)
     aliases = db_get_aliases(domain)
     text = '\nFound %d user(s):\n\n' % len(users)
@@ -762,7 +962,11 @@ def domain_list_usersaliases_win(parent: GuiManager, window: curses.window, top_
         if prev_source == alias.source:
             text += '\t  -> %s%s\n' % (alias.destination, foreign_msg)
         else:
-            text += '\t%s\n\t  -> %s%s\n' % (alias.source, alias.destination, foreign_msg)
+            text += '\t%s\n\t  -> %s%s\n' % (
+                alias.source,
+                alias.destination,
+                foreign_msg,
+            )
 
         prev_source = alias.source
 
@@ -770,57 +974,154 @@ def domain_list_usersaliases_win(parent: GuiManager, window: curses.window, top_
     handle.run()
 
 
-def domain_delete_user_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = Select(parent, window, 'Select user to delete', top_title, [(user.email, user) for user in db_get_users(domain)])
+def domain_delete_user_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = Select(
+        parent,
+        window,
+        'Select user to delete',
+        top_title,
+        [(user.email, user) for user in db_get_users(domain)],
+    )
     user = handle0.run()
     if not user:
         return
 
-    handle1 = Confirm(parent, window, 'Delete User', top_title, 'Do you want to delete the user \'%s\'?' % user.email, 'no', 'yes')
+    handle1 = Confirm(
+        parent,
+        window,
+        'Delete User',
+        top_title,
+        "Do you want to delete the user '%s'?" % user.email,
+        'no',
+        'yes',
+    )
     result = handle1.run()
     if result == ConfirmResult.OPTB:
         db_delete_user(user)
 
 
-def domain_delete_alias_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = Select(parent, window, 'Select alias to delete', top_title, [('%s  ->  %s' %(alias.source, alias.destination,), alias) for alias in db_get_aliases(domain)])
+def domain_delete_alias_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = Select(
+        parent,
+        window,
+        'Select alias to delete',
+        top_title,
+        [
+            (
+                '%s  ->  %s'
+                % (
+                    alias.source,
+                    alias.destination,
+                ),
+                alias,
+            )
+            for alias in db_get_aliases(domain)
+        ],
+    )
     alias = handle0.run()
     if not alias:
         return
 
-    handle1 = Confirm(parent, window, 'Delete Alias', top_title, 'Do you want to delete the alias \'%s\' (to \'%s\')?' % (alias.source, alias.destination,), 'no', 'yes')
+    handle1 = Confirm(
+        parent,
+        window,
+        'Delete Alias',
+        top_title,
+        "Do you want to delete the alias '%s' (to '%s')?"
+        % (
+            alias.source,
+            alias.destination,
+        ),
+        'no',
+        'yes',
+    )
     result = handle1.run()
     if result == ConfirmResult.OPTB:
         db_delete_alias(alias)
 
 
-def domain_change_pw_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = Select(parent, window, 'Select user for password change', top_title, [(user.email, user) for user in db_get_users(domain)])
+def domain_change_pw_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = Select(
+        parent,
+        window,
+        'Select user for password change',
+        top_title,
+        [(user.email, user) for user in db_get_users(domain)],
+    )
     user = handle0.run()
     if not user:
         return
 
-    handle1 = SingleInput(parent, window, 'Password for user \'%s\' (1/2)' % user.email, top_title, 'Enter the new password:', False)
+    handle1 = SingleInput(
+        parent,
+        window,
+        "Password for user '%s' (1/2)" % user.email,
+        top_title,
+        'Enter the new password:',
+        False,
+    )
     pw1 = handle1.run()
-    handle2 = SingleInput(parent, window, 'Password for user \'%s\' (2/2)' % user.email, top_title, 'Enter the new password again:', False)
+    handle2 = SingleInput(
+        parent,
+        window,
+        "Password for user '%s' (2/2)" % user.email,
+        top_title,
+        'Enter the new password again:',
+        False,
+    )
     pw2 = handle2.run()
 
     if pw1 and pw1 == pw2:
         db_update_password(user, pw1)
-        handle3 = Note(parent, window, 'Password Changed', top_title, 'Password for user \'%s\' successfully changed.' % user.email)
+        handle3 = Note(
+            parent,
+            window,
+            'Password Changed',
+            top_title,
+            "Password for user '%s' successfully changed." % user.email,
+        )
         handle3.run()
     else:
-        handle3 = Note(parent, window, 'Password Changed Failed', top_title, 'Could not change password for user \'%s\': different new passwords.' % user.email)
+        handle3 = Note(
+            parent,
+            window,
+            'Password Changed Failed',
+            top_title,
+            "Could not change password for user '%s': different new passwords."
+            % user.email,
+        )
         handle3.run()
 
 
-def domain_change_quota_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = Select(parent, window, 'Select user for quota change', top_title, [(user.email, user) for user in db_get_users(domain)])
+def domain_change_quota_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = Select(
+        parent,
+        window,
+        'Select user for quota change',
+        top_title,
+        [(user.email, user) for user in db_get_users(domain)],
+    )
     user = handle0.run()
     if not user:
         return
 
-    handle1 = SingleInput(parent, window, 'Quota for user \'%s\'' % user.email, top_title, 'Old quota: %s\n\nEnter the new quota amount (e.g. 10MB or 0 for unlimited):' % format_quota(user.quota), True)
+    handle1 = SingleInput(
+        parent,
+        window,
+        "Quota for user '%s'" % user.email,
+        top_title,
+        'Old quota: %s\n\nEnter the new quota amount (e.g. 10MB or 0 for unlimited):'
+        % format_quota(user.quota),
+        True,
+    )
     quota_raw = handle1.run()
     if not quota_raw:
         return
@@ -828,39 +1129,106 @@ def domain_change_quota_win(parent: GuiManager, window: curses.window, top_title
     try:
         quota_parsed = parse_quota(quota_raw)
     except ValueError as err:
-        handle2 = Note(parent, window, 'Quota Changed Failed', top_title, f'Could not change quota for user \'{user.email}\': {err}')
+        handle2 = Note(
+            parent,
+            window,
+            'Quota Changed Failed',
+            top_title,
+            f"Could not change quota for user '{user.email}': {err}",
+        )
         handle2.run()
         return
 
     db_update_quota(user, quota_parsed)
-    handle2 = Note(parent, window, 'Quota Changed', top_title, 'Quota for user \'%s\' successfully changed to %s.' % (user.email, format_quota(quota_parsed),))
+    handle2 = Note(
+        parent,
+        window,
+        'Quota Changed',
+        top_title,
+        "Quota for user '%s' successfully changed to %s."
+        % (
+            user.email,
+            format_quota(quota_parsed),
+        ),
+    )
     handle2.run()
 
 
-def domain_add_user_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = SingleInput(parent, window, 'Add User (1/4)', top_title, 'Enter the new username (the domain \'@%s\' will be appended):' % domain.name, True)
+def domain_add_user_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = SingleInput(
+        parent,
+        window,
+        'Add User (1/4)',
+        top_title,
+        "Enter the new username (the domain '@%s' will be appended):" % domain.name,
+        True,
+    )
     user_name = handle0.run()
     if not user_name or user_name.find('@') != -1:
-        handle1 = Note(parent, window, 'Add User Failed', top_title, 'Could not add new user: invalid username.')
+        handle1 = Note(
+            parent,
+            window,
+            'Add User Failed',
+            top_title,
+            'Could not add new user: invalid username.',
+        )
         handle1.run()
         return
 
     if user_name + '@' + domain.name in [user.email for user in db_get_users(domain)]:
-        handle2 = Note(parent, window, 'User Add Failed', top_title, 'Could not add user \'%s@%s\': username already exists.' % (user_name, domain.name,))
+        handle2 = Note(
+            parent,
+            window,
+            'User Add Failed',
+            top_title,
+            "Could not add user '%s@%s': username already exists."
+            % (
+                user_name,
+                domain.name,
+            ),
+        )
         handle2.run()
         return
 
-    handle3 = SingleInput(parent, window, 'Add User (2/4)', top_title, 'Enter the new password:', False)
+    handle3 = SingleInput(
+        parent, window, 'Add User (2/4)', top_title, 'Enter the new password:', False
+    )
     pw1 = handle3.run()
-    handle4 = SingleInput(parent, window, 'Add User (3/4)', top_title, 'Enter the new password again:', False)
+    handle4 = SingleInput(
+        parent,
+        window,
+        'Add User (3/4)',
+        top_title,
+        'Enter the new password again:',
+        False,
+    )
     pw2 = handle4.run()
 
     if not pw1 or not pw2 or pw1 != pw2:
-        handle5 = Note(parent, window, 'User Add Failed', top_title, 'Could not add new user \'%s@%s\': different new passwords.' % (user_name, domain.name,))
+        handle5 = Note(
+            parent,
+            window,
+            'User Add Failed',
+            top_title,
+            "Could not add new user '%s@%s': different new passwords."
+            % (
+                user_name,
+                domain.name,
+            ),
+        )
         handle5.run()
         return
 
-    handle6 = SingleInput(parent, window, 'Add User (4/4)', top_title, 'Enter the new quota amount (e.g. 10MB or 0 for unlimited):', True)
+    handle6 = SingleInput(
+        parent,
+        window,
+        'Add User (4/4)',
+        top_title,
+        'Enter the new quota amount (e.g. 10MB or 0 for unlimited):',
+        True,
+    )
     quota_raw = handle6.run()
     if quota_raw is None:
         return
@@ -868,42 +1236,116 @@ def domain_add_user_win(parent: GuiManager, window: curses.window, top_title: st
     try:
         quota_parsed = parse_quota(quota_raw)
     except ValueError as err:
-        handle7 = Note(parent, window, 'User Add Failed', top_title, f'Could not add quota for user \'{user_name}@{domain.name}\': {err}')
+        handle7 = Note(
+            parent,
+            window,
+            'User Add Failed',
+            top_title,
+            f"Could not add quota for user '{user_name}@{domain.name}': {err}",
+        )
         handle7.run()
         return
 
     db_create_user(domain, user_name + '@%s' % domain.name, pw1, quota_parsed)
-    handle8 = Note(parent, window, 'User Added Successful', top_title, 'User \'%s@%s\' successfully added.' % (user_name, domain.name,))
+    handle8 = Note(
+        parent,
+        window,
+        'User Added Successful',
+        top_title,
+        "User '%s@%s' successfully added."
+        % (
+            user_name,
+            domain.name,
+        ),
+    )
     handle8.run()
 
 
-def domain_add_alias_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> None:
-    handle0 = SingleInput(parent, window, 'Add Alias (1/2)', top_title, 'Enter the new alias source (the domain \'@%s\' will be appended):' % domain.name, True)
+def domain_add_alias_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> None:
+    handle0 = SingleInput(
+        parent,
+        window,
+        'Add Alias (1/2)',
+        top_title,
+        "Enter the new alias source (the domain '@%s' will be appended):" % domain.name,
+        True,
+    )
     source = handle0.run()
     if not source or source.find('@') != -1:
-        handle1 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: invalid source.')
+        handle1 = Note(
+            parent,
+            window,
+            'Add Alias Failed',
+            top_title,
+            'Could not add new alias: invalid source.',
+        )
         handle1.run()
         return
 
-    handle2 = SingleInput(parent, window, 'Add Alias (2/2)', top_title, 'Enter the new alias destination (supply the full address, with domain):', True)
+    handle2 = SingleInput(
+        parent,
+        window,
+        'Add Alias (2/2)',
+        top_title,
+        'Enter the new alias destination (supply the full address, with domain):',
+        True,
+    )
     destination = handle2.run()
     if not destination or destination.find('@') == -1:
-        handle3 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: invalid destination.')
+        handle3 = Note(
+            parent,
+            window,
+            'Add Alias Failed',
+            top_title,
+            'Could not add new alias: invalid destination.',
+        )
         handle3.run()
         return
 
-    if any(alias.source == source + '@' + domain.name and alias.destination == destination for alias in db_get_aliases(domain)):
-        handle4 = Note(parent, window, 'Add Alias Failed', top_title, 'Could not add new alias: alias already exists.')
+    if any(
+        alias.source == source + '@' + domain.name and alias.destination == destination
+        for alias in db_get_aliases(domain)
+    ):
+        handle4 = Note(
+            parent,
+            window,
+            'Add Alias Failed',
+            top_title,
+            'Could not add new alias: alias already exists.',
+        )
         handle4.run()
         return
 
     db_create_alias(domain, source + '@%s' % domain.name, destination)
-    handle5 = Note(parent, window, 'Alias Added', top_title, 'Alias \'%s@%s\' to \'%s\' successfully added.' % (source, domain.name, destination,))
+    handle5 = Note(
+        parent,
+        window,
+        'Alias Added',
+        top_title,
+        "Alias '%s@%s' to '%s' successfully added."
+        % (
+            source,
+            domain.name,
+            destination,
+        ),
+    )
     handle5.run()
 
 
-def domain_delete_confirm_win(parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain) -> bool:
-    handle = Confirm(parent, window, 'Delete Domain', top_title, 'Do you want to delete the domain \'%s\'?' % domain.name, 'no', 'yes')
+def domain_delete_confirm_win(
+    parent: GuiManager, window: curses.window, top_title: str, domain: DBDomain
+) -> bool:
+    handle = Confirm(
+        parent,
+        window,
+        'Delete Domain',
+        top_title,
+        "Do you want to delete the domain '%s'?" % domain.name,
+        'no',
+        'yes',
+    )
     result = handle.run()
 
     if result == ConfirmResult.OPTB:
@@ -913,34 +1355,51 @@ def domain_delete_confirm_win(parent: GuiManager, window: curses.window, top_tit
     return False
 
 
-def discard_changes_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
-    handle = Confirm(parent, window, 'Discard Changes', top_title, 'Do you want to discard all changes?', 'no', 'yes')
+def discard_changes_win(
+    parent: GuiManager, window: curses.window, top_title: str
+) -> None:
+    handle = Confirm(
+        parent,
+        window,
+        'Discard Changes',
+        top_title,
+        'Do you want to discard all changes?',
+        'no',
+        'yes',
+    )
     if handle.run() == ConfirmResult.OPTB:
         DB_CONNECTION.rollback()
 
 
 def save_changes_win(parent: GuiManager, window: curses.window, top_title: str) -> None:
-    handle = Confirm(parent, window, 'Save Changes', top_title, 'Do you want to save all changes?', 'no', 'yes')
+    handle = Confirm(
+        parent,
+        window,
+        'Save Changes',
+        top_title,
+        'Do you want to save all changes?',
+        'no',
+        'yes',
+    )
     if handle.run() == ConfirmResult.OPTB:
         DB_CONNECTION.commit()
 
 
 # From https://groups.google.com/forum/#!msg/comp.lang.python/CpUszNNXUQM/QADpl11Z-nAJ
 def getheightwidth() -> tuple[int, int]:
-    """ getwidth() -> (int, int)
+    """getwidth() -> (int, int)
 
-    Return the height and width of the console in characters """
+    Return the height and width of the console in characters"""
     try:
-        return int(os.environ["LINES"]), int(os.environ["COLUMNS"])
+        return int(os.environ['LINES']), int(os.environ['COLUMNS'])
     except KeyError:
-        height, width = struct.unpack("hhhh", ioctl(0, TIOCGWINSZ, "\000"*8))[0:2]  # type: ignore
+        height, width = struct.unpack('hhhh', ioctl(0, TIOCGWINSZ, '\000' * 8))[0:2]  # type: ignore
         if not height:
             return 25, 80
         return height, width
 
 
 class MainApp(GuiManager):
-
     header_size = 5
     header_text = 'ISPMail userctl'
     footer_size = 1
@@ -949,9 +1408,16 @@ class MainApp(GuiManager):
     def __init__(self, screen: curses.window):
         lines, cols = screen.getmaxyx()
         self.header_win = screen.derwin(self.header_size, cols, 0, 0)
-        self.working_win = screen.derwin(lines - self.header_size - self.footer_size, cols - 2 * self.main_margin, self.header_size, self.main_margin)
+        self.working_win = screen.derwin(
+            lines - self.header_size - self.footer_size,
+            cols - 2 * self.main_margin,
+            self.header_size,
+            self.main_margin,
+        )
         self.working_win.bkgd(curses.color_pair(2))
-        self.footer_win = screen.derwin(self.footer_size, cols, lines - self.footer_size, 0)
+        self.footer_win = screen.derwin(
+            self.footer_size, cols, lines - self.footer_size, 0
+        )
         self.children: set[GuiObject] = set()
 
         main_menu_items: MenuItemType = [
@@ -961,7 +1427,7 @@ class MainApp(GuiManager):
             ('Manage domain', domain_selection_win),
             ('Save changes', save_changes_win),
             ('Discard changes', discard_changes_win),
-            ]
+        ]
         self.main_menu = Menu(self, self.working_win, 'Overview', None, main_menu_items)
 
     def add(self, child: GuiObject) -> None:
@@ -974,19 +1440,28 @@ class MainApp(GuiManager):
         self.header_win.resize(self.header_size, cols)
         self.header_win.mvwin(0, 0)
 
-        self.working_win.resize(lines - self.header_size - self.footer_size, cols - 2 * self.main_margin)
+        self.working_win.resize(
+            lines - self.header_size - self.footer_size, cols - 2 * self.main_margin
+        )
         self.working_win.mvwin(self.header_size, self.main_margin)
 
         self.footer_win.resize(self.footer_size, cols)
         self.footer_win.mvwin(lines - self.footer_size, 0)
 
         for child in self.children:
-            child.resize(lines - self.header_size - self.footer_size, cols - 2 * self.main_margin)
+            child.resize(
+                lines - self.header_size - self.footer_size, cols - 2 * self.main_margin
+            )
 
     def draw(self) -> None:
         self.header_win.clear()
 
-        self.header_win.addstr(int(self.header_size / 2), int(self.header_win.getmaxyx()[1] / 2) - int(len(self.header_text) / 2), self.header_text, curses.color_pair(1) | curses.A_BOLD)
+        self.header_win.addstr(
+            int(self.header_size / 2),
+            int(self.header_win.getmaxyx()[1] / 2) - int(len(self.header_text) / 2),
+            self.header_text,
+            curses.color_pair(1) | curses.A_BOLD,
+        )
 
         self.header_win.noutrefresh()
 
@@ -1038,7 +1513,14 @@ def main() -> None:
 
     lines, cols = getheightwidth()
     if lines < 25 or cols < 80:
-        print(WARN + '   small terminal detected (%d x %d)' % (lines, cols, ))
+        print(
+            WARN
+            + '   small terminal detected (%d x %d)'
+            % (
+                lines,
+                cols,
+            )
+        )
         print(WARN + '   recommend minimum is (25 x 80)')
         print(WARN + '   app might be unstable')
 
@@ -1051,11 +1533,12 @@ def main() -> None:
             user='root',
             # password='',
             db='mailserver',
-            charset='utf8mb4')
+            charset='utf8mb4',
+        )
 
         ## DEBUG support
-        #import sqlite3
-        #DB_CONNECTION = sqlite3.connect("testdb.db")
+        # import sqlite3
+        # DB_CONNECTION = sqlite3.connect("testdb.db")
 
         DB_CURSOR = DB_CONNECTION.cursor()
 
@@ -1078,7 +1561,14 @@ def main() -> None:
             DB_CONNECTION.rollback()
             DB_CONNECTION.close()
 
-        print(ERR + ' MySQLdb error %d: %s' % (err.args[0], err.args[1],))
+        print(
+            ERR
+            + ' MySQLdb error %d: %s'
+            % (
+                err.args[0],
+                err.args[1],
+            )
+        )
         print(WARN + fmt_yellow(' Unsaved changes are lost!'))
         raise
 
