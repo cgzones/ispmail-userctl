@@ -23,16 +23,6 @@
 # SOFTWARE.
 
 
-######################
-#                    #
-# Configuration      #
-#                    #
-######################
-
-# whether to use bcrypt passwords or sha512-crypt
-USE_BCRYPT: bool = False
-
-
 import sys
 import curses
 import curses.ascii
@@ -46,6 +36,16 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable
+
+
+######################
+#                    #
+# Configuration      #
+#                    #
+######################
+
+# whether to use bcrypt passwords or sha512-crypt
+USE_BCRYPT: bool = False
 
 
 if not sys.stdout.isatty() or not sys.stdin.isatty():
