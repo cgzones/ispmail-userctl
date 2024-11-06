@@ -145,8 +145,8 @@ class DBAlias:
     destination: str
 
 
-DB_CURSOR: MySQLdb.cursors.Cursor = None
-DB_CONNECTION: MySQLdb.connections.Connection = None
+DB_CURSOR: cursors.Cursor = None
+DB_CONNECTION: connections.Connection = None
 
 
 def db_get_domains() -> list[DBDomain]:
