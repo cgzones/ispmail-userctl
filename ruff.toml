@@ -1,2 +1,18 @@
+[lint]
+
+# See https://docs.astral.sh/ruff/rules/
+#
+# Not yet enabled: CPY, FA, PL, ERA, PGH, DOC, FAST
+select = ["F", "E", "W", "I", "N", "UP", "YTT", "ANN", "S", "BLE", "B", "A",
+  "COM", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "ISC", "ICN", "LOG", "G",
+  "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM",
+  "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "PD", "TRY", "FLY", "NPY",
+  "AIR", "PERF", "FURB", "RUF"]
+
+ignore = ["E501", "ANN101", "ANN401", "T201", "Q000"]
+
+fixable = ["ALL"]
+unfixable = []
+
 [format]
 quote-style = "single"
