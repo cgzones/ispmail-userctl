@@ -3,8 +3,8 @@ Python script using ncurses to manage domains, users and aliases of an ISP-style
 
 ___
 
-This script is intended to work on a mail sever installation from https://workaround.org/ispmail by Christoph Haas.
-It assumes the database tables to be formatted exactly as described in https://workaround.org/ispmail/buster/prepare-the-database/.
+This script is intended to work on a mail sever installation from https://workaround.org/ by Christoph Haas.
+It assumes the database tables to be formatted exactly as described in https://workaround.org/ispmail-bookworm/prepare-the-database/.
 
 By default passwords are hashed with SHA512; one can change the script to use BCRYPT.
 
