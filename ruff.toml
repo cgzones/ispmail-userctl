@@ -9,7 +9,7 @@ select = ["F", "E", "W", "I", "N", "UP", "YTT", "ANN", "S", "BLE", "B", "A",
   "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "PD", "TRY", "FLY", "NPY",
   "AIR", "PERF", "FURB", "RUF"]
 
-ignore = ["E501", "ANN101", "ANN401", "T201", "Q000"]
+ignore = ["E501", "ANN401", "T201", "Q000"]
 
 fixable = ["ALL"]
 unfixable = []
