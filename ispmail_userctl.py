@@ -30,12 +30,13 @@ import re
 import struct
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from fcntl import ioctl
 from signal import SIGWINCH, signal
 from termios import TIOCGWINSZ
-from typing import Any, Callable
+from typing import Any
 
 ######################
 #                    #
@@ -456,8 +457,7 @@ class Select(GuiObject):
                 if index == len(self.items) - 1:
                     self.pad.addstr(index + 4, 1, item[0], mode)
                 else:
-                    msg = '%d. %s' % (index + 1, item[0])
-                    self.pad.addstr(index + 3, 1, msg, mode)
+                    self.pad.addstr(index + 3, 1, f"{index + 1}. {item[0]}", mode)
         else:
             self.pad.addstr(3, 1, 'No entry to select')
             self.pad.addstr(5, 1, self.items[0][0], curses.A_REVERSE)
@@ -738,8 +738,7 @@ class Menu(GuiManager):
         for index, item in enumerate(self.items):
             mode = curses.A_REVERSE if index == self.position else curses.A_NORMAL
 
-            msg = '%d. %s' % (index + 1, item[0])
-            self.window.addstr(index + 3, 1, msg, mode)
+            self.window.addstr(index + 3, 1, f"{index + 1}. {item[0]}", mode)
 
         self.window.noutrefresh()
 
@@ -798,7 +797,7 @@ def domain_overview_win(
     top_title: str,
 ) -> None:
     domains = db_get_domains()
-    text = 'Found %d domain(s):\n\n' % len(domains)
+    text = f"Found {len(domains)} domain(s):\n\n"
     for domain in domains:
         text += f'\t{domain.name}\n'
 
@@ -814,13 +813,13 @@ def full_overview_win(
     domains = db_get_domains()
     users = db_get_users()
     aliases = db_get_aliases()
-    text = 'Found %d domain(s):\n\n' % len(domains)
+    text = f"Found {len(domains)} domain(s):\n\n"
     for domain in domains:
         text += f'\t{domain.name}\n'
-    text += '\nFound %d user(s):\n\n' % len(users)
+    text += f"\nFound {len(users)} user(s):\n\n"
     for user in users:
         text += f'\t{user.email}  --  {format_quota(user.quota)} quota\n'
-    text += '\nFound %d alias(es):\n\n' % len(aliases)
+    text += f"\nFound {len(aliases)} alias(es):\n\n"
     aliases.sort(key=lambda alias: alias.source)
     prev_source = None
     for alias in aliases:
@@ -917,10 +916,10 @@ def domain_list_usersaliases_win(
 ) -> None:
     users = db_get_users(domain)
     aliases = db_get_aliases(domain)
-    text = '\nFound %d user(s):\n\n' % len(users)
+    text = f"\nFound {len(users)} user(s):\n\n"
     for user in users:
         text += f'\t{user.email}  --  {format_quota(user.quota)} quota\n'
-    text += '\nFound %d alias(es):\n\n' % len(aliases)
+    text += f"\nFound {len(aliases)} alias(es):\n\n"
     aliases.sort(key=lambda alias: alias.source)
     prev_source = None
     for alias in aliases:
@@ -1481,14 +1480,7 @@ def main() -> None:
 
     lines, cols = getheightwidth()
     if lines < 25 or cols < 80:
-        print(
-            WARN
-            + '   small terminal detected (%d x %d)'
-            % (
-                lines,
-                cols,
-            ),
-        )
+        print(WARN + f"   small terminal detected ({lines} x {cols})")
         print(WARN + '   recommend minimum is (25 x 80)')
         print(WARN + '   app might be unstable')
 
@@ -1529,14 +1521,7 @@ def main() -> None:
             DB_CONNECTION.rollback()
             DB_CONNECTION.close()
 
-        print(
-            ERR
-            + ' MySQLdb error %d: %s'
-            % (
-                err.args[0],
-                err.args[1],
-            ),
-        )
+        print(ERR + f" MySQLdb error {err.args[0]}: {err.args[1]}")
         print(WARN + fmt_yellow(' Unsaved changes are lost!'))
         raise
 
